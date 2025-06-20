@@ -4,6 +4,7 @@ import logging
 import asyncio
 from datetime import datetime
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.constants import ChatAction
 from telegram.ext import (
     ApplicationBuilder,
     CommandHandler,
@@ -25,6 +26,30 @@ ADS = [
 WELCOME_MESSAGES = [
     "မင်္ဂလာပါ 🩷",
     "Batman688 စလော့ဂိမ်းအေးဂျင့် မှကြိုဆိုပါတယ် 🥰",
+    "♾မြန်မာနိုင်ငံရဲ့နံပါတ်⚡️Game ဆိုဒ်ကြီးမှာ♾\n\n"
+    "➡️မစမ်းကြည့်သေးဘူးဆိုရင် မင်း\n\n"
+    "💯 ငွေဖြင့် Legendary ဖြစ်နိုင်တဲ့\n"
+    "💯အခွင့်အလမ်းလက်လွှတ်နေပြီ!\n\n"
+    "💯အလျော်အစားမှန်ကန်ပြီး ငွေကြေးအာမခံမှုရှိတဲ့အေးဂျင့် \n\n"
+    "😞PP အွန်လိုင်းဂိမ်းတစ်ခုကနေ သင်အနေနဲ့ \n\n"
+    "📌 3000 ကျပ်ရှိရုံနဲ့စတင်လို့ရပါပြီ\n"
+    "📌Bonus အပြည့်, Cashback ရရှိမယ်, \n\n"
+    "✔️ နာမည်ကြီး Game များဖြစ်တဲ့\n"
+    "✔️Gates of Olympus \n"
+    "✔️Sugar Rush\n"
+    "✔️Starlight Princess\n"
+    "✔️Sweet Bonanza\n"
+    "✔️Pyramid Bonanza\n\n"
+    "✔️အမိုက်စား Promotion တွေ\n"
+    "✔️မန်ဘာသစ် Double Bonus\n"
+    "✔️ရှုံးကြေး 30% Cashback\n"
+    "✔️နေ့စဉ်ငွေသွင်း 50% Bonus\n"
+    "✔️နိုင်ကြေးပြန်အမ်း 100%\n"
+    "✔️ပိတ်ခန်းမရှိဘူး! ပျော်ချင်လားငွေနဲ့စွန့်စားချင်လား\n\n"
+    "✔️တစ်ချက်တင်ပြီး Game Master ဖြစ်ရအောင်!\n"
+    "✔️သူများတွေအနိုင်ရတာကြည့်နေမလား။\n"
+    "✔️မင်းလည်းဝင်ကစားလိုက်တော့!\n"
+    "✔️ဒီနေပဲ Jackpot ကျလို့ သူဌေးဖြစ်နိုင်တယ်ရှင့်✔️",
 ]
 
 # ========== LOGGING ==========
@@ -77,12 +102,21 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     add_user(update)
     add_mau_user(chat_id)
 
-    for url in ADS:
-        await context.bot.send_photo(chat_id=chat_id, photo=url)
+    # Show typing action
+    await context.bot.send_chat_action(chat_id=chat_id, action=ChatAction.TYPING)
+    await asyncio.sleep(1)
 
+    # Send welcome messages
     for msg in WELCOME_MESSAGES:
         await context.bot.send_message(chat_id=chat_id, text=msg)
+        await asyncio.sleep(0.5)
 
+    # Send image in the middle
+    for url in ADS:
+        await context.bot.send_photo(chat_id=chat_id, photo=url)
+        await asyncio.sleep(0.5)
+
+    # Send contact buttons
     buttons = [
         [InlineKeyboardButton("Agent ❤️", url="https://t.me/Batman_Unit")],
         [InlineKeyboardButton("Agent ❤️", url="https://t.me/JulyMoe786")],
