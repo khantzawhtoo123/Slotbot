@@ -14,14 +14,11 @@ from telegram.ext import (
     filters,
 )
 
-# ========== CONFIG ==========
-TOKEN = "7822123802:AAFYac_ePTxooG5Jm2YlpjiskF7iJnZk7jc"
+# ===== CONFIG =====
+TOKEN = "BOT_TOKEN_HERE"
 ADMIN_IDS = [6640151906]
 DATA_FILE = "users.json"
-
-ADS = [
-    "https://t.me/helperPhoto1/74",
-]
+ADS = ["https://t.me/helperPhoto1/74"]
 
 WELCOME_MESSAGES = [
     "မင်္ဂလာပါ 🩷",
@@ -49,15 +46,13 @@ WELCOME_MESSAGES = [
     "✔️တစ်ချက်တင်ပြီး Game Master ဖြစ်ရအောင်!\n"
     "✔️သူများတွေအနိုင်ရတာကြည့်နေမလား။\n"
     "✔️မင်းလည်းဝင်ကစားလိုက်တော့!\n"
-    "✔️ဒီနေပဲ Jackpot ကျလို့ သူဌေးဖြစ်နိုင်တယ်ရှင့်✔️",
+    "✔️ဒီနေပဲ Jackpot ကျလို့ သူဌေးဖြစ်နိုင်တယ်ရှင့်✔️"
 ]
 
-# ========== LOGGING ==========
-logging.basicConfig(
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
-)
+# ===== LOGGING =====
+logging.basicConfig(format="%(asctime)s - %(message)s", level=logging.INFO)
 
-# ========== UTILS ==========
+# ===== USER MANAGEMENT =====
 def load_users():
     if os.path.exists(DATA_FILE):
         with open(DATA_FILE, "r") as f:
@@ -75,66 +70,91 @@ def add_user(update: Update):
     first_name = update.effective_user.first_name
 
     if not any(u["id"] == chat_id for u in users):
-        users.append({"id": chat_id, "username": username, "first_name": first_name})
+        new_user = {"id": chat_id, "username": username, "first_name": first_name}
+        users.append(new_user)
         save_users(users)
-        print(f"✅ New user stored: {chat_id} - {username}")
+        return new_user
+    return None
+
+async def notify_admins(new_user):
+    text = (
+        f"🔔 New user joined!\n\n"
+        f"👤 Name: {new_user.get('first_name')}\n"
+        f"🆔 ID: <code>{new_user.get('id')}</code>\n"
+        f"💬 Username: @{new_user.get('username') or 'N/A'}"
+    )
+    for admin_id in ADMIN_IDS:
+        try:
+            await app.bot.send_message(admin_id, text, parse_mode="HTML")
+        except:
+            pass
 
 def add_mau_user(chat_id):
     mau_month = datetime.now().strftime("%Y-%m")
     mau_file = f"data/mau/{mau_month}.json"
     os.makedirs(os.path.dirname(mau_file), exist_ok=True)
 
+    mau_users = []
     if os.path.exists(mau_file):
         with open(mau_file, "r") as f:
             mau_users = json.load(f)
-    else:
-        mau_users = []
 
     if chat_id not in mau_users:
         mau_users.append(chat_id)
         with open(mau_file, "w") as f:
             json.dump(mau_users, f)
-        print(f"📈 MAU updated for {chat_id}")
 
-# ========== HANDLERS ==========
+# ===== HANDLERS =====
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if update.message.chat.type != "private":
+        return
+
     chat_id = update.effective_chat.id
-    add_user(update)
+    new_user = add_user(update)
     add_mau_user(chat_id)
 
-    # Show typing action
-    await context.bot.send_chat_action(chat_id=chat_id, action=ChatAction.TYPING)
-    await asyncio.sleep(1)
+    if new_user:
+        await notify_admins(new_user)
 
-    # Send welcome messages
-    for msg in WELCOME_MESSAGES:
-        await context.bot.send_message(chat_id=chat_id, text=msg)
+    # First two welcome lines
+    for msg in WELCOME_MESSAGES[:2]:
+        await context.bot.send_chat_action(chat_id, ChatAction.TYPING)
+        await asyncio.sleep(1)
+        await context.bot.send_message(chat_id, msg)
         await asyncio.sleep(0.5)
 
-    # Send image in the middle
+    # Send image
     for url in ADS:
-        await context.bot.send_photo(chat_id=chat_id, photo=url)
+        await context.bot.send_chat_action(chat_id, ChatAction.UPLOAD_PHOTO)
+        await asyncio.sleep(1)
+        await context.bot.send_photo(chat_id, photo=url)
         await asyncio.sleep(0.5)
 
-    # Send contact buttons
-    buttons = [
-        [InlineKeyboardButton("Agent ❤️", url="https://t.me/Batman_Unit")],
-        [InlineKeyboardButton("Agent ❤️", url="https://t.me/JulyMoe786")],
-        [InlineKeyboardButton("Agent ❤️", url="https://t.me/WineLay558")],
-    ]
-    reply_markup = InlineKeyboardMarkup(buttons)
+    # Rest of the message
+    for msg in WELCOME_MESSAGES[2:]:
+        await context.bot.send_chat_action(chat_id, ChatAction.TYPING)
+        await asyncio.sleep(1)
+        await context.bot.send_message(chat_id, msg)
+        await asyncio.sleep(0.5)
 
+    # Contact buttons
+    buttons = [
+        [InlineKeyboardButton("① 💎 Agent 1", url="https://t.me/Batman_Unit")],
+        [InlineKeyboardButton("② 🔥 Agent 2", url="https://t.me/JulyMoe786")],
+        [InlineKeyboardButton("③ 💰 Agent 3", url="https://t.me/WineLay558")],
+    ]
+    await context.bot.send_chat_action(chat_id, ChatAction.TYPING)
+    await asyncio.sleep(1)
     await context.bot.send_message(
-        chat_id=chat_id,
-        text="📩 ဆက်သွယ်ရန် - အောက်က Button 3 ချက်မှတဆင့် ဆက်သွယ်နိုင်ပါတယ်ရှင့်",
-        reply_markup=reply_markup,
+        chat_id,
+        "📩 ဆက်သွယ်ရန် - အောက်က Button 3 ချက်မှတဆင့် ဆက်သွယ်နိုင်ပါတယ်ရှင့်",
+        reply_markup=InlineKeyboardMarkup(buttons),
     )
 
 async def broadcast_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_user.id not in ADMIN_IDS:
-        await update.message.reply_text("⛔ You are not authorized.")
         return
-    await update.message.reply_text("📢 Broadcast ပို့မည့် message ကိုပေးပို့ပါ။")
+    await update.message.reply_text("📢 ပေးပို့မည့် message ကိုဖြည့်ပါ")
     context.user_data["awaiting_broadcast"] = True
 
 async def handle_broadcast(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -142,12 +162,10 @@ async def handle_broadcast(update: Update, context: ContextTypes.DEFAULT_TYPE):
         context.user_data["broadcast_message"] = update.message.text
         await update.message.reply_text(
             f"🔍 Preview:\n\n{update.message.text}",
-            reply_markup=InlineKeyboardMarkup(
-                [
-                    [InlineKeyboardButton("✅ Confirm", callback_data="broadcast_confirm")],
-                    [InlineKeyboardButton("❌ Cancel", callback_data="broadcast_cancel")],
-                ]
-            ),
+            reply_markup=InlineKeyboardMarkup([
+                [InlineKeyboardButton("✅ Confirm", callback_data="broadcast_confirm")],
+                [InlineKeyboardButton("❌ Cancel", callback_data="broadcast_cancel")],
+            ])
         )
         context.user_data["awaiting_broadcast"] = False
 
@@ -163,56 +181,43 @@ async def broadcast_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
             try:
                 await context.bot.send_message(chat_id=user["id"], text=msg)
                 count += 1
-            except Exception as e:
-                print(f"❌ Error sending to {user['id']}: {e}")
-        await query.edit_message_text(f"✅ Broadcast sent to {count} users.")
+            except:
+                continue
+        await query.edit_message_text(f"✅ Sent to {count} users.")
     else:
-        await query.edit_message_text("❌ Broadcast cancelled.")
+        await query.edit_message_text("❌ Cancelled.")
 
 async def total_users(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if update.effective_user.id not in ADMIN_IDS:
-        await update.message.reply_text("⛔ You are not authorized.")
-        return
-    users = load_users()
-    await update.message.reply_text(f"📊 Total Users: {len(users)}")
+    if update.effective_user.id in ADMIN_IDS:
+        users = load_users()
+        await update.message.reply_text(f"📊 Total Users: {len(users)}")
 
 async def mau_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_user.id not in ADMIN_IDS:
-        await update.message.reply_text("⛔ You are not authorized.")
         return
-
     mau_month = datetime.now().strftime("%Y-%m")
     mau_file = f"data/mau/{mau_month}.json"
-
     if not os.path.exists(mau_file):
         await update.message.reply_text("📊 This month's MAU: 0 users")
         return
-
     with open(mau_file, "r") as f:
         mau_users = json.load(f)
-
-    await update.message.reply_text(f"📊 MAU for {mau_month}: {len(mau_users)} users")
+    await update.message.reply_text(f"📊 MAU: {len(mau_users)} users")
 
 async def fallback(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("❗ ကျေးဇူးပြုပြီး /start ကိုနှိပ်ပါ။ Bot သုံးရန် အစပြုနိုင်ပါတယ်။")
+    await update.message.reply_text("❗ ကျေးဇူးပြုပြီး /start ကိုနှိပ်ပါ။")
 
-# ========== MAIN ==========
+# ===== MAIN =====
+app = ApplicationBuilder().token(TOKEN).build()
+app.add_handler(CommandHandler("start", start))
+app.add_handler(CommandHandler("broadcast", broadcast_command))
+app.add_handler(CommandHandler("total", total_users))
+app.add_handler(CommandHandler("mau", mau_command))
+app.add_handler(CallbackQueryHandler(broadcast_buttons, pattern="^broadcast_"))
+app.add_handler(MessageHandler(filters.TEXT & filters.User(ADMIN_IDS) & ~filters.COMMAND, handle_broadcast))
+app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, fallback))
+
 def main():
-    app = ApplicationBuilder().token(TOKEN).build()
-
-    app.add_handler(CommandHandler("start", start))
-    app.add_handler(CommandHandler("broadcast", broadcast_command))
-    app.add_handler(CommandHandler("total", total_users))
-    app.add_handler(CommandHandler("mau", mau_command))
-    app.add_handler(CallbackQueryHandler(broadcast_buttons, pattern="^broadcast_"))
-
-    app.add_handler(MessageHandler(
-        filters.TEXT & filters.User(user_id=ADMIN_IDS) & ~filters.COMMAND,
-        handle_broadcast
-    ))
-
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, fallback))
-
     app.run_polling()
 
 if __name__ == "__main__":
