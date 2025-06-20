@@ -15,7 +15,7 @@ from telegram.ext import (
 )
 
 # ===== CONFIG =====
-TOKEN = "BOT_TOKEN_HERE"
+TOKEN = "7822123802:AAFYac_ePTxooG5Jm2YlpjiskF7iJnZk7jc"
 ADMIN_IDS = [6640151906]
 DATA_FILE = "users.json"
 ADS = ["https://t.me/helperPhoto1/74"]
